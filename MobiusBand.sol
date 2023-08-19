@@ -14,15 +14,15 @@ interface IERC20EX is IERC20{
 }
 
 contract MobiusBand is ReentrancyGuard, Bucket {
-    uint256 public constant PRINCIPAL_RATIO = 500000;
-    uint256 public constant INVEST_RATIO = 300000;
-    uint256 public constant RECOMMENDREWARD_RATIO = 20000;
-    uint256 public constant REFERRER_RATIO = 60000;
-    uint256 public constant BUYBACK_RATIO = 50000;
-    uint256 public constant SUPERNODE_RATIO = 10000;
-    uint256 public constant BONUS_RATIO = 20000;
-    uint256 public constant COMMUNITY_RATIO = 20000;
-    uint256 public constant PLATFORM_RATIO = 20000;
+    uint256 public constant PRINCIPAL_RATIO = 500000; //50%
+    uint256 public constant INVEST_RATIO = 300000; //30%
+    uint256 public constant RECOMMENDREWARD_RATIO = 20000; //2%
+    uint256 public constant REFERRER_RATIO = 60000; //6%
+    uint256 public constant BUYBACK_RATIO = 50000; //5%
+    uint256 public constant SUPERNODE_RATIO = 10000; //1%
+    uint256 public constant BONUS_RATIO = 20000; //2%
+    uint256 public constant COMMUNITY_RATIO = 20000; //2%
+    uint256 public constant PLATFORM_RATIO = 20000; //2%
     uint256 public constant PRICE_PRECISION = 1e6;
 
     uint256 public constant ACCURACY = 1e18;
@@ -67,9 +67,9 @@ contract MobiusBand is ReentrancyGuard, Bucket {
     INonfungiblePositionManager positionManager =
     INonfungiblePositionManager(0xC36442b4a4522E871399CD717aBDD847Ab11FE88);
     uint24 constant defaultFee = 3000;
-    address public tokenAddress = 0x4e97B3046200E982b80E8E580e9e57401e655980;
+    address public tokenAddress = 0xF70e40031adf2EF46B8fa600BdE1CEbAbBcE0065;
     address public maticAddress = 0x0d500B1d8E8eF31E21C99d1Db9A6444d3ADf1270;
-    uint256 public positionId = 1015199;
+    uint256 public positionId = 1015851;
     uint256 public lpMaticAmount;
     uint256 public lpMaticLimit;
 
@@ -208,10 +208,6 @@ contract MobiusBand is ReentrancyGuard, Bucket {
             "Invalid address provided"
         );
 
-        (uint8[] memory typeDays1,uint16[] memory stock1) = generateTypeDaysAndStock(2, 10);
-        setStock(1, typeDays1, stock1);
-        setMagicBox(30);
-
         UserGlobalInfo storage userGlobalInfo;
         userGlobalInfo = userGlobalInfos[_platformAddress];
         userGlobalInfo.referrer = address(0);
@@ -242,31 +238,16 @@ contract MobiusBand is ReentrancyGuard, Bucket {
         }
     }
 
-    function setTokenConsumeRatio(uint256 _ratio) public {
+    function setTokenConsumeRatio(uint256 _ratio) external {
         require(msg.sender == operator, "Only operator");
         tokenConsumeRatio = _ratio;
     }
 
-    function updateTokenOutputRatio(uint256[] memory _ratio) public {
+    function updateTokenOutputRatio(uint256[] memory _ratio) external {
         require(msg.sender == operator, "Only operator");
         for (uint256 i = 0; i < 5; i++) {
             tokenOutputRatio[i] = _ratio[i];
         }
-    }
-
-    function generateTypeDaysAndStock(uint8 start, uint8 end) internal pure returns (uint8[] memory, uint16[] memory) {
-        require(start < end, "Invalid range");
-
-        uint8 length = end - start + 1;
-        uint8[] memory typeDays = new uint8[](length);
-        uint16[] memory stock = new uint16[](length);
-
-        for (uint8 i = start; i <= end; i++) {
-            typeDays[i-start] = i;
-            stock[i-start] = i;
-        }
-
-        return (typeDays, stock);
     }
 
     function setPause(bool _paused) external {
@@ -311,7 +292,7 @@ contract MobiusBand is ReentrancyGuard, Bucket {
         uint256 ledgerType,
         uint8[] memory typeDays,
         uint16[] memory stock
-    ) internal {
+    ) public {
         require(ledgerType > 0, "Invalid ledger type");
         require(ledgerType < 4, "Invalid ledger type");
         require(stock.length > 0, "Invalid stock array");
@@ -420,18 +401,6 @@ contract MobiusBand is ReentrancyGuard, Bucket {
         distributionAmount += setPosition(MagicBoxAmount4,3);
 
         totalFlowAmount += msg.value;
-    }
-
-    function setMagicBox(uint8 endNum) private {
-        (uint8[] memory typeDays2,uint16[] memory stock2) = generateTypeDaysAndStock(11, endNum - 10);
-        setStock(2, typeDays2, stock2);
-        (uint8[] memory typeDays3,uint16[] memory stock3) = generateTypeDaysAndStock(endNum - 9, endNum);
-        setStock(3, typeDays3, stock3);
-    }
-
-    function adjustPause(uint8 endNum) external {
-        require(msg.sender == operator, "Only operator");
-        setMagicBox(endNum);
     }
 
     function setPosition (
@@ -594,15 +563,10 @@ contract MobiusBand is ReentrancyGuard, Bucket {
 
     function claimReferrerReward(address referrer) external notContract nonReentrant {
         require(referrer != address(0), "Invalid referrer address");
-
         UserGlobalInfo storage userGlobalInfo = userGlobalInfos[referrer];
-
         uint256 claimableAmount = userGlobalInfo.totalReferrerReward - userGlobalInfo.referrerRewardClaimed;
-
         require(claimableAmount > 0, "No claimable amount");
-
         userGlobalInfo.referrerRewardClaimed += claimableAmount;
-
         {
             (bool success, ) = referrer.call{value: claimableAmount}("");
             require(success, "Transfer failed.");
